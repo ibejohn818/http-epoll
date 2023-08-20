@@ -1,12 +1,11 @@
-project(server C)
+project(http-epoll C)
 
 set(VERSION "0.1.0")
 
 set(SOURCES 
-  main.c
+  server.c
+  http-epoll.c
 )
-
-set(THREAD_POOL 4 CACHE STRING "the amount of threads in the pool")
 
 # do some ghetto capability detection
 execute_process(COMMAND which apt
@@ -18,19 +17,17 @@ execute_process(COMMAND which rpm
 execute_process(COMMAND which apk
                 RESULT_VARIABLE HAS_APK)
 
-# make thread pool count a configuration option
-add_compile_definitions(THREAD_POOL=${THREAD_POOL})
-
 include_directories(
-  "${http-epoll-server_SOURCE_DIR}/src/lib"
   "${http-epoll-server_SOURCE_DIR}/src/include"
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} pthread http-epoll)
+add_library(${PROJECT_NAME} ${SOURCES})
+target_link_libraries(${PROJECT_NAME} pthread)
 
 set(CMAKE_INSTALL_MODE "REL_SYMLINK")
-install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install(FILES ${http-epoll-server_SOURCE_DIR}/src/include/http-epoll.h DESTINATION include)
+install(DIRECTORY ${http-epoll-server_SOURCE_DIR}/src/include/http-epoll DESTINATION include)
 
 
 

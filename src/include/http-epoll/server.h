@@ -12,7 +12,7 @@
 #define MAX_EVENTS 1024
 #define HEADER_BUF 8192
 
-#ifndef THEAD_POOL
+#ifndef THREAD_POOL
 #define THREAD_POOL 10
 #endif
 
@@ -52,8 +52,10 @@ void set_nonblocking(int fd);
  */
 void *server_loop(void *targs);
 
+/**
+ * 
+ */
 void handler(http_request_t *r, server_ctx_t *ctx);
-
 
 bool http_body_check(const char *buffer, size_t pos);
 #endif

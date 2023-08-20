@@ -1,4 +1,4 @@
-#include "server.h"
+#include "http-epoll/server.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -108,11 +108,9 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     }
 
     if (!end) {
-      fprintf(stderr, "read !end \n");
       return;
     }
 
-    printf("Read Buffer: %s\n", r->buffer);
     r->state = WRITE;
   }
   if (r->state == WRITE) {

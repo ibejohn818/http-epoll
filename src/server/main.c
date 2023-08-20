@@ -1,5 +1,5 @@
-#include "server.h"
-#include <bits/types/sigset_t.h>
+#include "http-epoll/server.h"
+#include <signal.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
   server_ctx_t ctx;
   ctx.listener_fd = listener_fd;
   ctx.epoll_fd = epoll_fd;
+  ctx.count = 0;
 
   // pthread_t pool[THREAD_POOL];
   server_thread_t pool[THREAD_POOL];

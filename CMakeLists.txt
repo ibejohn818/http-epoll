@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(http-epoll)
+project(http-epoll-server)
 
 set_property(GLOBAL PROPERTY USE_FOLERS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -8,6 +8,7 @@ option(BUILD_SHARED_LIBS "SHARED?" ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
+add_subdirectory(src/lib)
 add_subdirectory(src/server)
 
 if( EXISTS "${PROJECT_BINARY_DIR}/compile_commands.json" )
