@@ -1,6 +1,7 @@
 
 BUILD_TYPE ?= debug
 BUILD_TYPE_LOWER ?= $(shell echo $(BUILD_TYPE) | tr A-Z a-z)
+PLATFORM ?= linux/amd64
 
 # build options
 THREAD_POOL ?= 30
@@ -20,11 +21,13 @@ build:
 
 package-rocky9:
 	docker buildx build \
+					--platform $(PLATFORM) \
 					-t http-epoll:rpm \
 					--output type=local,dest=./dist \
 					-f docker/rocky9.Dockerfile .
 
 alpine-build:
 	docker buildx build \
+					--platform $(PLATFORM) \
 					-t http-epoll:alpine \
 					-f docker/alpine.Dockerfile .
