@@ -24,7 +24,6 @@ static void *reallocate(void *pointer, size_t old_size, size_t new_size) {
 #define HTTP_GROW_ARRAY(type, pointer, new_size, old_size)                     \
   (type *)reallocate(pointer, new_size, old_size)
 
-
 http_scanner_t *http_scanner_init(const char *input) {
   http_scanner_t *s;
   s = (http_scanner_t *)malloc(sizeof(*s));
@@ -34,7 +33,7 @@ http_scanner_t *http_scanner_init(const char *input) {
 }
 
 static bool http_scanner_is_eof(http_scanner_t *s) {
-  bool eof = *s->current == '\0'; 
+  bool eof = *s->current == '\0';
   if (eof) {
     puts("EOF Found!");
   }
@@ -46,30 +45,26 @@ char advance(http_scanner_t *s) {
   return s->current[-1];
 }
 
-
 void http_scanner_free(http_scanner_t *s) {
   free((void *)s->current);
-  free(s); 
+  free(s);
 }
 
 http_method_t http_msg_char_to_method(const char *m) {
   char method[16] = {0};
   uint8_t i = 0;
-  for(; *m; m++) {
-      method[i] = tolower(*m);
-      i++;
+  for (; *m; m++) {
+    method[i] = tolower(*m);
+    i++;
   }
 
   if (strcmp("get", method) == 0) {
     return HTTP_METHOD_GET;
-  }
-  else if (strcmp("post", method) == 0) {
+  } else if (strcmp("post", method) == 0) {
     return HTTP_METHOD_POST;
-  }
-  else if (strcmp("put", method) == 0) {
+  } else if (strcmp("put", method) == 0) {
     return HTTP_METHOD_PUT;
-  } 
-  else if (strcmp("delete", method) == 0) {
+  } else if (strcmp("delete", method) == 0) {
     return HTTP_METHOD_DELETE;
   }
 
@@ -79,27 +74,27 @@ http_method_t http_msg_char_to_method(const char *m) {
 void http_scanner_scan_request_proto(http_scanner_t *s, http_msg_t *m) {
 
   uint8_t found = 0;
-  for(;;) {
+  for (;;) {
     char buff[2048] = {0};
     char c = advance(s);
 
-    if(http_scanner_is_eof(s)) {
+    if (http_scanner_is_eof(s)) {
       break;
     }
 
-    if(c == ' ') {
+    if (c == ' ') {
       int len = s->current - s->start;
-      memcpy(&buff, s->start, (len-1));
-      printf("B: %s\n", buff);
+      memcpy(&buff, s->start, (len - 1));
+      // printf("B: %s\n", buff);
       s->start = s->current;
 
       if (found == 0) {
-          // first block is verb
-          m->method = http_msg_char_to_method(buff);
-          found++;
+        // first block is verb
+        m->method = http_msg_char_to_method(buff);
+        found++;
       } else if (found == 1) {
-          // second block is URI
-        strcpy(m->uri, buff); 
+        // second block is URI
+        strcpy(m->uri, buff);
         found++;
       }
     }
@@ -107,12 +102,11 @@ void http_scanner_scan_request_proto(http_scanner_t *s, http_msg_t *m) {
     if (c == '\n') {
       // get protocol version
       int len = s->current - s->start;
-      memcpy(&buff, s->start, (len-1));
+      memcpy(&buff, s->start, (len - 1));
       strcpy(m->proto, buff);
       break;
     }
   }
-
 }
 http_msg_t *http_msg_create(http_msg_type_t type) {
   http_msg_t *m;
@@ -122,89 +116,103 @@ http_msg_t *http_msg_create(http_msg_type_t type) {
 }
 
 char http_scanner_peek(http_scanner_t *s) {
-    if (http_scanner_is_eof(s)) {
-        return '\0';
-    }
+  if (http_scanner_is_eof(s)) {
+    return '\0';
+  }
 
-    char c = *s->current;
-    return c;
+  char c = *s->current;
+  return c;
 }
 
 static void http_scanner_eat_whitespace(http_scanner_t *s) {
-    for(;;) {
-        char c = *s->current;
-        switch (c) {
-            case ' ':
-                advance(s);
-            default:
-                return;
-        }
+  for (;;) {
+    char c = *s->current;
+    switch (c) {
+    case ' ':
+      advance(s);
+    default:
+      return;
     }
+  }
+}
 
+static void str_to_lower(char *s) {
+  size_t l = strlen(s);
+
+  for (uint32_t i = 0; i < l; i++) {
+    if (s[i] == '\0') {
+      return;
+    }
+    s[i] = tolower(s[i]);
+  }
 }
 
 http_header_t *http_scanner_scan_header_line(http_scanner_t *s) {
 
-    // peek at begining to see if we have double \n
-    if (http_scanner_peek(s) == '\n') {
-        puts("start of body found");
-        return NULL;
+  // peek at begining to see if we have double \n
+  if (http_scanner_peek(s) == '\n') {
+    puts("start of body found");
+    return NULL;
+  }
+
+  char key[128] = {0};
+  char val[2048] = {0};
+  bool key_found = false;
+  s->start = s->current;
+
+  for (;;) {
+
+    char c = advance(s);
+    if (http_scanner_is_eof(s)) {
+      return NULL;
     }
 
-    char key[128] = {0};
-    char val[2048] = {0};
-    bool key_found = false;
-    s->start = s->current;
+    if (!key_found && http_scanner_peek(s) == ':') {
 
-    for(;;) {
+      uint32_t l = s->current - s->start;
 
-        char c = advance(s);
-        if (http_scanner_is_eof(s)) {
-            return NULL;
-        }
+      // copy to key buff
+      memcpy(key, s->start, l);
+      key_found = true;
 
-        if (!key_found && http_scanner_peek(s) == ':') {
+      // move past colon
+      advance(s);
 
-            uint32_t l = s->current - s->start;
-            // copy to key buff
-            memcpy(key, s->start, l);
-            key_found = true;
-            // move past colon
-            advance(s);
-            // reset start
-            s->start = s->current;
-            continue;
-        } else if(key_found && http_scanner_peek(s) == '\n') {
+      // reset start
+      s->start = s->current;
+      continue;
+    } else if (key_found && http_scanner_peek(s) == '\n') {
 
-//            http_scanner_eat_whitespace(s);
-//            s->start = s->current;
+      uint32_t l = s->current - s->start;
 
-            uint32_t l = s->current - s->start;
-            // copy to key buff
-            memcpy(val, s->start, l);
-            key_found = true;
-            // move past newline
-            advance(s);
-            break;
-        }
+      // copy to key buff
+      memcpy(val, s->start, l);
+      key_found = true;
+
+      // move past newline
+      advance(s);
+      break;
     }
+  }
 
-    if (!key_found) {
-        return NULL;
-    }
+  if (!key_found) {
+    return NULL;
+  }
 
-    http_header_t *h;
-    h = (http_header_t *)calloc(1, sizeof(*h));
-    strcpy(h->key, key);
-    strcpy(h->value, val);
+  http_header_t *h = (http_header_t *)malloc(sizeof(*h));
 
+  // always copy header key as lowercase
+  str_to_lower(key);
+  strcpy(h->key, key);
 
-    return h;
+  strcpy(h->value, val);
+
+  return h;
 }
 
 static void http_scanner_scan_to_eof(http_scanner_t *s) {
   uint64_t c = 0;
-  for(;;) {
+  for (;;) {
     if (http_scanner_is_eof(s)) {
       printf("Count: %lu \n", c);
       break;
@@ -215,30 +223,33 @@ static void http_scanner_scan_to_eof(http_scanner_t *s) {
 }
 
 http_msg_t *http_msg_scan_request(const char *input) {
-    // http_scanner_t *s = http_scanner_init(input);
-    http_scanner_t s = {.start = input, .current = input};
-    http_msg_t *m = http_msg_create(HTTP_MSG_REQUEST);
-    m->headers = http_hash_map_init(HTTP_HASH_MAP_DEFAULT_BUCKETS);
+  // http_scanner_t *s = http_scanner_init(input);
+  http_scanner_t s = {.start = input, .current = input};
+  http_msg_t *m = http_msg_create(HTTP_MSG_REQUEST);
+  m->headers = http_hash_map_init(HTTP_HASH_MAP_DEFAULT_BUCKETS);
 
-    // scan protocol line
-    http_scanner_scan_request_proto(&s, m);
-    // scan headers
+  // scan protocol line
+  http_scanner_scan_request_proto(&s, m);
+  // scan headers
 
-    for(;;) {
-        http_header_t *header = http_scanner_scan_header_line(&s);
-        if (header == NULL) {
-            break;
-        } else {
-            http_hash_map_insert(m->headers, HTTP_NODE_HEADER, header->key, (void *)header);
-        }
+  for (;;) {
+    http_header_t *header = http_scanner_scan_header_line(&s);
+    if (header == NULL) {
+      break;
+    } else {
+      http_hash_map_insert(m->headers, HTTP_NODE_HEADER, header->key,
+                           (void *)header);
     }
+  }
 
   // http_scanner_scan_to_eof(&s);
 
   // http_scanner_free(s);
 
-    return m;
+  return m;
 }
+
+#define HTTP_READ_UNTIL_LIMIT 4096
 
 void scanner_read_until(http_scanner_t *s, const char mark) {
 
@@ -247,7 +258,7 @@ void scanner_read_until(http_scanner_t *s, const char mark) {
   char key[1024] = {0};
   char val[2048] = {0};
 
-  while(loop) {
+  while (loop) {
 
     char c = advance(s);
     if (c == mark) {
@@ -259,12 +270,10 @@ void scanner_read_until(http_scanner_t *s, const char mark) {
 
     i++;
 
-    if(i > 90) {
-      loop=false;
+    if (i > HTTP_READ_UNTIL_LIMIT) {
+      loop = false;
     }
-
   }
-
 }
 
 static uint32_t jenkins_one_at_a_time_hash(const char *key) {
@@ -297,10 +306,9 @@ static uint64_t hash_key_bjb2(const char *str) {
 }
 
 static uint64_t hash_map_key(const char *str) {
-  return jenkins_one_at_a_time_hash(str);
-  // return hash_key_bjb2(str);
+  // return jenkins_one_at_a_time_hash(str);
+  return hash_key_bjb2(str);
 }
-
 
 http_hash_map_t *http_hash_map_init(size_t size) {
   http_hash_map_t *m;
@@ -392,8 +400,7 @@ http_hash_node_t *http_hash_map_get(http_hash_map_t *m, const char *key) {
   return NULL;
 }
 
-static void http_hash_map_free_node_value(http_node_type_t type,
-                                          void *value) {
+static void http_hash_map_free_node_value(http_node_type_t type, void *value) {
   switch (type) {
 
   case HTTP_NODE_HEADER: {
@@ -448,21 +455,32 @@ http_header_t *http_header_create(const char *key, const char *value) {
   return h;
 }
 
-void http_hash_map_for_each(http_hash_map_t *t, void (*handler)(http_hash_node_t *i)) {
+void http_hash_map_for_each(http_hash_map_t *t,
+                            void (*handler)(http_hash_node_t *i)) {
 
-    for (uint64_t i = 0; i < t->size; i++) {
-        // skip if no bucket
-        if (t->nodes[i] == NULL) {
-            continue;
-        }
-
-        // get bucket
-        http_hash_node_t *b = t->nodes[i];
-
-        // walk the list and execute the callback handler
-        while (b != NULL) {
-            handler(b);
-            b = b->next;
-        }
+  for (uint64_t i = 0; i < t->size; i++) {
+    // skip if no bucket
+    if (t->nodes[i] == NULL) {
+      continue;
     }
+
+    // get bucket
+    http_hash_node_t *b = t->nodes[i];
+
+    // walk the list and execute the callback handler
+    while (b != NULL) {
+      handler(b);
+      b = b->next;
+    }
+  }
+}
+
+http_header_t *http_msg_header_get(http_msg_t *m, const char *key) {
+
+  http_hash_node_t *n = http_hash_map_get(m->headers, key);
+  if (n == NULL) {
+    return NULL;
+  }
+
+  return (http_header_t *)n->value;
 }

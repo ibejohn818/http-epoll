@@ -140,6 +140,11 @@ void http_hash_map_insert(http_hash_map_t *m,
  */
 http_hash_node_t *http_hash_map_get(http_hash_map_t *m, const char *key);
 
+/**
+ * return a http_header_t* from a http_msg_t* by key
+ */
+http_header_t *http_msg_header_get(http_msg_t *m, const char *key);
+
 void http_hash_map_for_each(http_hash_map_t *t, void (*handler)(http_hash_node_t *i));
 
 /**

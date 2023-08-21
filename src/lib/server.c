@@ -71,6 +71,15 @@ bool http_body_check(const char *buffer, size_t pos) {
   return false;
 }
 
+static void handle_headers(http_hash_node_t *n) {
+
+  http_header_t *h = (http_header_t *)n->value;
+  fprintf(stdout,
+          " "
+          "Key: %s | val: %s \n",
+          h->key, (char *)&h->value);
+}
+
 void handler(http_request_t *r, server_ctx_t *ctx) {
 
   if (r->state == READ) {
@@ -129,7 +138,7 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     size_t msg_len = strlen(msg);
 
     int res = write(r->client_socket, msg, msg_len);
-    printf("write res: %d | count %d\n", res, ctx->count);
+    fprintf(stderr, "write res: %d | count %d \n", res, ctx->count);
 
     if (res < 0) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
