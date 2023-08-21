@@ -1,6 +1,7 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
+#include "http-epoll/http.h"
 #include <arpa/inet.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -32,6 +33,7 @@ typedef struct {
   size_t id;
   server_ctx_t *ctx;
   pthread_t thread;
+  struct epoll_event *events;
 } server_thread_t;
 
 typedef struct {
@@ -39,8 +41,10 @@ typedef struct {
   int client_socket;
   size_t buffer_pos;
   size_t buffer_size;
+  http_msg_t *http_msg;
   char *buffer;
 } http_request_t;
+
 
 int create_listener(uint16_t port);
 

@@ -1,4 +1,5 @@
 #include "http-epoll/server.h"
+#include "http-epoll/http.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -16,31 +17,29 @@ int create_listener(uint16_t port) {
   // TODO: addr make configurable
   server_addr.sin_addr.s_addr = INADDR_ANY;
 
-  int listenfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (listenfd < 0) {
+  int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (fd < 0) {
     fprintf(stderr, "error creating listener socket\n");
     return -1;
   }
 
-  int reuse =
-      setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+  int reuse = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
   if (reuse < 0) {
     fprintf(stderr, "error setting reuse addr on listener socket\n");
     return -1;
   }
 
-  if (bind(listenfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) !=
-      0) {
-    fprintf(stderr, "Error while binding listenfd to address\n");
+  if (bind(fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0) {
+    fprintf(stderr, "Error while binding fd to address\n");
     return -1;
   }
-  if (listen(listenfd, MAX_CONN) < 0) {
-    fprintf(stderr, "Error while listening on listenfd\n");
+  if (listen(fd, MAX_CONN) < 0) {
+    fprintf(stderr, "Error while listening on fd\n");
     return -1;
   }
 
-  return listenfd;
+  return fd;
 }
 
 void set_nonblocking(int fd) {
@@ -111,6 +110,8 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
       return;
     }
 
+    r->http_msg = http_msg_scan_request(r->buffer);
+
     r->state = WRITE;
   }
   if (r->state == WRITE) {
@@ -119,10 +120,12 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     //      multiple writes, this example "should" only take a single write
     ctx->count += 1;
     char msg[128] = {0};
-    sprintf(msg, "HTTP/1.1 200 OK\n"
-                 "request-count: %d\n"
-                 "context-length: 3\n\n"
-                 ":-D", ctx->count);
+    sprintf(msg,
+            "HTTP/1.1 200 OK\n"
+            "request-count: %d\n"
+            "context-length: 3\n\n"
+            ":-D",
+            ctx->count);
     size_t msg_len = strlen(msg);
 
     int res = write(r->client_socket, msg, msg_len);
@@ -152,7 +155,7 @@ void *server_loop(void *targs) {
 
   printf("starting thread #%lu \n", thread->id);
 
-  struct epoll_event *events = malloc(sizeof(*events) * MAX_EVENTS);
+  struct epoll_event *events = thread->events;
 
   if (events == NULL) {
     fprintf(stderr, "unable to allocated epoll_events\n");
@@ -198,8 +201,8 @@ void *server_loop(void *targs) {
 
           evt.events = EPOLLET | EPOLLIN | EPOLLONESHOT;
 
-          // TODO/NOTE: this would be a good place to implement a memory 
-          //            of requests and buffers  
+          // TODO/NOTE: this would be a good place to implement a memory
+          //            of requests and buffers
           http_request_t *request = malloc(sizeof(*request));
           request->buffer = malloc(sizeof(char) * HEADER_BUF);
           if (request == NULL || request->buffer == NULL) {
@@ -220,30 +223,34 @@ void *server_loop(void *targs) {
         }
       } else {
 
-        struct epoll_event ee;
+        struct epoll_event evt;
 
         http_request_t *request = (http_request_t *)events[i].data.ptr;
 
         handler(request, ctx);
 
         if (request->state == READ) {
-          ee.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
-          ee.data.ptr = request;
-          if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, request->client_socket, &ee) <
+          evt.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+          evt.data.ptr = request;
+          if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, request->client_socket, &evt) <
               0) {
             fprintf(stderr, "epoll mod error in request read state \n");
             continue;
           }
         } else if (request->state == WRITE) {
-          ee.events = EPOLLOUT | EPOLLET | EPOLLONESHOT;
-          ee.data.ptr = request;
-          if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, request->client_socket, &ee) <
+          evt.events = EPOLLOUT | EPOLLET | EPOLLONESHOT;
+          evt.data.ptr = request;
+          if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, request->client_socket, &evt) <
               0) {
             fprintf(stderr, "epoll mod error in request write state \n");
             continue;
           }
         } else if (request->state == CLOSE) {
           close(request->client_socket);
+          if (request->http_msg != NULL && request->http_msg->headers != NULL) {
+            http_hash_map_free(request->http_msg->headers);
+            free(request->http_msg);
+          }
           free(request->buffer);
           free(request);
         }

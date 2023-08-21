@@ -1,4 +1,4 @@
-#include "http-epoll/server.h"
+#include "http-epoll.h"
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
     server_thread_t thread;
     thread.id = (i + 1);
     thread.ctx = &ctx;
+    thread.events =  malloc(sizeof(*thread.events) * MAX_EVENTS);
     pool[i] = thread;
 
     int res =
@@ -75,15 +76,20 @@ int main(int argc, char **argv) {
     }
   }
 
-  sigset_t sigs;
-  int sig_ptr;
-  int res;
+  sigset_t sigs = {};
+  int sig_ptr = 0;
 
   sigaddset(&sigs, SIGUSR2);
 
   sigwait(&sigs, &sig_ptr);
 
   // graceful_stop(pool);
+  for (uint8_t i = 0; i < THREAD_POOL; i++) {
+    server_thread_t st = pool[i];
+    pthread_kill(st.thread, SIGTERM);
+    sleep(1);
+    free(st.events);
+  }
 
   return 0;
 }
