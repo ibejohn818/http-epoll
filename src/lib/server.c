@@ -213,7 +213,7 @@ void *server_loop(void *targs) {
           evt.events = EPOLLET | EPOLLIN | EPOLLONESHOT;
 
           // TODO/NOTE: this would be a good place to implement a memory
-          //            of requests and buffers
+          //            pool of requests and buffers
           http_request_t *request = malloc(sizeof(*request));
           request->buffer = malloc(sizeof(char) * HEADER_BUF);
           if (request == NULL || request->buffer == NULL) {
