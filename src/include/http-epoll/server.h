@@ -25,7 +25,7 @@ typedef enum {
 typedef struct {
   int listener_fd;
   int epoll_fd;
-  sig_atomic_t count;
+  sig_atomic_t volatile count;
 } server_ctx_t;
 
 typedef struct {

@@ -1,18 +1,39 @@
 #include "http-epoll/server.h"
-#include <signal.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <time.h>
+#include <unistd.h>
 
+/*
+void graceful_stop(server_thread_t *threads) {
+  fprintf(stderr, "do a graceful stop \n");
+  for(uint8_t i=0; i < THREAD_POOL; i++) {
+    printf("Thread: %d", threads[(size_t)i].id);
+  }
+}
+*/
 
-void wait_handler() {}
-
+/**
+ * user: server [PORT(default:8080)]
+ * Start the epoll server 
+ */
 int main(int argc, char **argv) {
 
-  signal(SIGPIPE, SIG_IGN);
+  uint16_t port = 8080;
 
-  int listener_fd = create_listener(8080);
+  if (argc > 1) {
+    port = (uint64_t)atoi(argv[1]);
+  }
+
+  // get pid to display
+  int pid = getpid();
+
+  printf("Using port: %d on pid: %d\n", port, pid);
+
+  // signal(SIGPIPE, SIG_IGN);
+  int listener_fd = create_listener(port);
 
   set_nonblocking(listener_fd);
 
@@ -36,19 +57,18 @@ int main(int argc, char **argv) {
   ctx.epoll_fd = epoll_fd;
   ctx.count = 0;
 
-  // pthread_t pool[THREAD_POOL];
   server_thread_t pool[THREAD_POOL];
 
   printf("starting thread pool: %d\n", THREAD_POOL);
 
-  // server_loop((void *)&ctx);
   for (uint8_t i = 0; i < THREAD_POOL; i++) {
     server_thread_t thread;
     thread.id = (i + 1);
     thread.ctx = &ctx;
     pool[i] = thread;
 
-    int res = pthread_create(&thread.thread, NULL, server_loop, (void *)&pool[i]);
+    int res =
+        pthread_create(&thread.thread, NULL, server_loop, (void *)&pool[i]);
     if (res < 0) {
       fprintf(stderr, "error starting thread #%d\n", i);
       exit(EXIT_FAILURE);
@@ -58,10 +78,12 @@ int main(int argc, char **argv) {
   sigset_t sigs;
   int sig_ptr;
   int res;
-  sigaddset(&sigs, SIGUSR2);
-  res = sigwait(&sigs, &sig_ptr);
 
-  printf("Sig Res: %d \n", res);
-  printf("Sig Ptr: %d \n", sig_ptr);
+  sigaddset(&sigs, SIGUSR2);
+
+  sigwait(&sigs, &sig_ptr);
+
+  // graceful_stop(pool);
+
   return 0;
 }

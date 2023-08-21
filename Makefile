@@ -1,6 +1,8 @@
 
 BUILD_TYPE ?= debug
 BUILD_TYPE_LOWER ?= $(shell echo $(BUILD_TYPE) | tr A-Z a-z)
+
+# build options
 THREAD_POOL ?= 30
 
 clean:
