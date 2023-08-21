@@ -16,7 +16,7 @@ void graceful_stop(server_thread_t *threads) {
 */
 
 /**
- * user: server [PORT(default:8080)]
+ * usage: server [PORT(default:8080)]
  * Start the epoll server 
  */
 int main(int argc, char **argv) {
