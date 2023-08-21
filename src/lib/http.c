@@ -103,7 +103,7 @@ void http_scanner_scan_request_proto(http_scanner_t *s, http_msg_t *m) {
       // get protocol version
       int len = s->current - s->start;
       memcpy(&buff, s->start, (len - 1));
-      strcpy(m->proto, buff);
+      strcpy(m->version, buff);
       break;
     }
   }

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 int create_listener(uint16_t port) {
@@ -128,12 +129,13 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     // NOTE: here we'll track writes back to the client in-case it takes
     //      multiple writes, this example "should" only take a single write
     ctx->count += 1;
-    char msg[128] = {0};
+    char msg[200] = {0};
     sprintf(msg,
-            "HTTP/1.1 200 OK\n"
-            "request-count: %d\n"
-            "context-length: 3\n\n"
-            ":-D",
+            "HTTP/1.0 200 OK\r\n"
+            "request-count: %d\r\n"
+            "content-type: plain/text\r\n"
+            "context-length: 4\r\n\r\n"
+            ":-D\n",
             ctx->count);
     size_t msg_len = strlen(msg);
 
@@ -191,7 +193,7 @@ void *server_loop(void *targs) {
 
       if (events[i].data.fd == listener_fd) {
         // polled socket is the root listener, accept connection
-        struct epoll_event evt;
+        struct epoll_event  evt;
 
         for (;;) {
 
@@ -255,6 +257,7 @@ void *server_loop(void *targs) {
             continue;
           }
         } else if (request->state == CLOSE) {
+          shutdown(request->client_socket, SHUT_RDWR);
           close(request->client_socket);
           if (request->http_msg != NULL && request->http_msg->headers != NULL) {
             http_hash_map_free(request->http_msg->headers);

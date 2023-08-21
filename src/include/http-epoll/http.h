@@ -27,6 +27,10 @@ typedef enum {
   HTTP_METHOD_CONNECT,
 } http_method_t;
 
+typedef struct {
+    char uri[2048];
+} http_url_t;
+
 /**
  * Hash table node acts as a linked list to handle collisions
  */
@@ -85,7 +89,7 @@ typedef struct {
   http_msg_type_t type;
   http_method_t method;
   char uri[2048];
-  char proto[16];
+  char version[16];
 
   http_hash_map_t *headers;
   
