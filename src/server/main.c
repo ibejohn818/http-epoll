@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
   printf("Using port: %d on pid: %d\n", port, pid);
 
-  // signal(SIGPIPE, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
   int listener_fd = create_listener(port);
 
   set_nonblocking(listener_fd);
