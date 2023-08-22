@@ -1,4 +1,4 @@
-from locust import FastHttpUser, task, between
+from locust import FastHttpUser, HttpUser, task, between
 import random
 
 domains_frag = "ssl-{}.domain.{}"
@@ -12,8 +12,8 @@ domain_suffix = [
 MAX_DOMAINS = 100
 
 
-class Basic(FastHttpUser):
-    wait_time = between(0.5, 0.5)
+class Basic(HttpUser):
+    wait_time = between(0.5, 1.5)
 
     def domain(self):
         # assemble domain
@@ -25,7 +25,7 @@ class Basic(FastHttpUser):
         # domain = "10.0.3.120:8080"
         domain = "0.0.0.0:8080"
         return domain
-        
+       
 
     @task
     def cpu(self):

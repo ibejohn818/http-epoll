@@ -1,5 +1,6 @@
 #include "http-epoll/server.h"
 #include "http-epoll/http.h"
+#include "http-epoll/pools.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -122,6 +123,8 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
 
     r->http_msg = http_msg_scan_request(r->buffer);
 
+    // http_hash_map_for_each(r->http_msg->headers, &handle_headers);
+
     r->state = WRITE;
   }
   if (r->state == WRITE) {
@@ -133,7 +136,7 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     sprintf(msg,
             "HTTP/1.0 200 OK\r\n"
             "request-count: %d\r\n"
-            "content-type: plain/text\r\n"
+            "content-type: text/plain\r\n"
             "context-length: 4\r\n\r\n"
             ":-D\n",
             ctx->count);
@@ -193,7 +196,7 @@ void *server_loop(void *targs) {
 
       if (events[i].data.fd == listener_fd) {
         // polled socket is the root listener, accept connection
-        struct epoll_event  evt;
+        struct epoll_event evt;
 
         for (;;) {
 
@@ -215,7 +218,13 @@ void *server_loop(void *targs) {
           // TODO/NOTE: this would be a good place to implement a memory
           //            pool of requests and buffers
           http_request_t *request = malloc(sizeof(*request));
+
+#ifdef USE_MEM_POOL
+          request->buffer = (char *)memory_pool_get();
+#else
           request->buffer = malloc(sizeof(char) * HEADER_BUF);
+#endif
+
           if (request == NULL || request->buffer == NULL) {
             fprintf(stderr, "unable to allocate http_reqeust_t \n");
             exit(EXIT_FAILURE);
@@ -257,13 +266,20 @@ void *server_loop(void *targs) {
             continue;
           }
         } else if (request->state == CLOSE) {
+
           shutdown(request->client_socket, SHUT_RDWR);
           close(request->client_socket);
+
+#ifdef USE_MEM_POOL
+          memory_pool_release((void *)request->buffer);
+#else
+          free(request->buffer);
+#endif
+
           if (request->http_msg != NULL && request->http_msg->headers != NULL) {
             http_hash_map_free(request->http_msg->headers);
             free(request->http_msg);
           }
-          free(request->buffer);
           free(request);
         }
       }

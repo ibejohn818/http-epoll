@@ -5,6 +5,7 @@ PLATFORM ?= linux/amd64
 
 # build options
 THREAD_POOL ?= 30
+USE_MEM_POOL ?= 0
 
 clean:
 	rm -rf cmake-*-*
@@ -14,6 +15,7 @@ clean:
 config:
 	cmake -B cmake-$(BUILD_TYPE_LOWER)-build \
 		-DTHREAD_POOL:STRING=$(THREAD_POOL) \
+		-DUSE_MEM_POOL:STRING=$(USE_MEM_POOL) \
 		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G "Unix Makefiles" .
 
 build:

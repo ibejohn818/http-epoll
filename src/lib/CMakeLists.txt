@@ -3,6 +3,7 @@ project(http-epoll C)
 set(VERSION "0.1.0")
 
 set(SOURCES 
+  pools.c
   http.c
   server.c
   http-epoll.c
