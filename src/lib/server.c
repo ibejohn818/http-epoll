@@ -91,7 +91,7 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     //      in-case it takes multiple reads to read the entire buffer
     bool end = false;
     while (1) {
-      // NOTE: reading 1 byte at a time for this test, don't do this in prod,
+      // NOTE: reading 1 byte at a time for this demo, don't do this in prod,
       //       create  more efficient buffers
       ssize_t res = read(r->client_socket, r->buffer + r->buffer_pos, 1);
       if (r->buffer_pos >= HEADER_BUF) {
@@ -168,17 +168,12 @@ void *server_loop(void *targs) {
   server_thread_t *thread = (server_thread_t *)targs;
   server_ctx_t *ctx = thread->ctx;
 
-  printf("starting thread #%lu \n", thread->id);
-
-  struct epoll_event *events = thread->events;
-
-  if (events == NULL) {
-    fprintf(stderr, "unable to allocated epoll_events\n");
-    exit(EXIT_FAILURE);
-  }
-
   int epoll_fd = ctx->epoll_fd;
   int listener_fd = ctx->listener_fd;
+  struct epoll_event *events = thread->events;
+
+  printf("starting thread #%lu \n", thread->id);
+
 
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(client_addr);
@@ -211,6 +206,7 @@ void *server_loop(void *targs) {
               break;
             }
           }
+
 
           set_nonblocking(client_socket);
 
