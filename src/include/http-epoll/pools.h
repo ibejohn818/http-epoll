@@ -4,11 +4,12 @@
 
 #include <stdbool.h>
 
-#define MEM_POOL_ITEMS 2048
-#define MEM_POOL_ELEMENT 8192
+#define MEM_POOL_ITEMS 512
+#define MEM_POOL_ELEMENT (8 * 1024)
 
 typedef struct {
-  bool is_use;
+  bool pooled;
+  bool in_use;
   char memory[MEM_POOL_ELEMENT];
 } memory_pool_item_t;
 

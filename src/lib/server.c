@@ -82,6 +82,13 @@ static void handle_headers(http_hash_node_t *n) {
           h->key, (char *)&h->value);
 }
 
+static void print_http_request(http_request_t *r) {
+
+  fprintf(stderr, "URI: %s \n", r->http_msg->uri); 
+  http_hash_map_for_each(r->http_msg->headers, &handle_headers);
+
+}
+
 void handler(http_request_t *r, server_ctx_t *ctx) {
 
   if (r->state == READ) {
@@ -264,8 +271,8 @@ void *server_loop(void *targs) {
           }
         } else if (request->state == CLOSE) {
 
-          // print out the header fields for testing
-          http_hash_map_for_each(request->http_msg->headers, &handle_headers);
+
+          print_http_request(request);
 
           shutdown(request->client_socket, SHUT_RDWR);
           close(request->client_socket);

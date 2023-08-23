@@ -7,6 +7,8 @@
 #include <stdint.h>
 
 #define HTTP_HASH_MAP_DEFAULT_BUCKETS 64
+#define HTTP_HEADER_KEY_SIZE 128
+#define HTTP_HEADER_VAL_SIZE 8192
 
 /**
  * Http hash table data type
@@ -70,8 +72,8 @@ typedef struct {
 } HttpToken;
 
 typedef struct {
-  char key[128];
-  char value[4096];
+  char key[HTTP_HEADER_KEY_SIZE];
+  char value[HTTP_HEADER_VAL_SIZE];
 } http_header_t;
 
 typedef struct {
