@@ -158,11 +158,4 @@ void http_hash_map_for_each(http_hash_map_t *t, void (*handler)(http_hash_node_t
  */
 void http_hash_map_free(http_hash_map_t *m);
 
-// ############
-//  HTTP request
-// ############
-typedef struct {
-
-} HttpRequest;
-
 #endif

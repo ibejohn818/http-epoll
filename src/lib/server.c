@@ -84,9 +84,8 @@ static void handle_headers(http_hash_node_t *n) {
 
 static void print_http_request(http_request_t *r) {
 
-  fprintf(stderr, "URI: %s \n", r->http_msg->uri); 
+  fprintf(stderr, "URI: %s \n", r->http_msg->uri);
   http_hash_map_for_each(r->http_msg->headers, &handle_headers);
-
 }
 
 void handler(http_request_t *r, server_ctx_t *ctx) {
@@ -100,28 +99,42 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     while (1) {
       // NOTE: reading 1 byte at a time for this demo, don't do this in prod,
       //       create  more efficient buffers
-      ssize_t res = read(r->client_socket, r->buffer + r->buffer_pos, 1);
-      if (r->buffer_pos >= HEADER_BUF) {
+      ssize_t bytes_read =
+          read(r->client_socket, r->buffer + r->buffer_pos, HTTP_READ_BUFFER);
+      if (r->buffer_pos >= MEM_POOL_ELEMENT) {
         printf("buffer over max: \n");
         r->state = CLOSE;
         break;
       }
-      if (res < 0) {
+      if (bytes_read < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
           break;
         } else {
           perror("handler read");
           break;
         }
-      } else if (res == 0) {
+      } else if (bytes_read == 0) {
         // EOF? should we move to the next state?
         break;
       } else {
+
+        for (uint32_t i = 0; i < (r->buffer_pos + bytes_read); i++) {
+          if (r->buffer_pos >= 4 && http_body_check(r->buffer, r->buffer_pos)) {
+            end = true;
+          }
+          r->buffer_pos += 1;
+          if (end) {
+            break;
+          }
+        }
+
+        /*
         r->buffer_pos++;
         // check for body markers
         if (r->buffer_pos >= 4 && http_body_check(r->buffer, r->buffer_pos)) {
           end = true;
         }
+        */
         break;
       }
     }
@@ -131,7 +144,6 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     }
 
     r->http_msg = http_msg_scan_request(r->buffer);
-
 
     r->state = WRITE;
   }
@@ -181,7 +193,6 @@ void *server_loop(void *targs) {
 
   printf("starting thread #%lu \n", thread->id);
 
-
   struct sockaddr_in client_addr;
   socklen_t client_addr_len = sizeof(client_addr);
 
@@ -213,7 +224,6 @@ void *server_loop(void *targs) {
               break;
             }
           }
-
 
           set_nonblocking(client_socket);
 
@@ -270,7 +280,6 @@ void *server_loop(void *targs) {
             continue;
           }
         } else if (request->state == CLOSE) {
-
 
           print_http_request(request);
 

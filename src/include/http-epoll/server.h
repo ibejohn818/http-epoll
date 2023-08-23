@@ -12,6 +12,7 @@
 #define MAX_CONN 1000
 #define MAX_EVENTS 1024
 #define HEADER_BUF 8192
+#define HTTP_READ_BUFFER 1024
 
 #ifndef THREAD_POOL
 #define THREAD_POOL 10
