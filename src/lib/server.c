@@ -91,6 +91,8 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
     //      in-case it takes multiple reads to read the entire buffer
     bool end = false;
     while (1) {
+      // NOTE: reading 1 byte at a time for this test, don't do this in prod,
+      //       create  more efficient buffers
       ssize_t res = read(r->client_socket, r->buffer + r->buffer_pos, 1);
       if (r->buffer_pos >= HEADER_BUF) {
         printf("buffer over max: \n");
@@ -123,7 +125,6 @@ void handler(http_request_t *r, server_ctx_t *ctx) {
 
     r->http_msg = http_msg_scan_request(r->buffer);
 
-    // http_hash_map_for_each(r->http_msg->headers, &handle_headers);
 
     r->state = WRITE;
   }
@@ -266,6 +267,9 @@ void *server_loop(void *targs) {
             continue;
           }
         } else if (request->state == CLOSE) {
+
+          // print out the header fields for testing
+          http_hash_map_for_each(request->http_msg->headers, &handle_headers);
 
           shutdown(request->client_socket, SHUT_RDWR);
           close(request->client_socket);

@@ -35,7 +35,7 @@ http_scanner_t *http_scanner_init(const char *input) {
 static bool http_scanner_is_eof(http_scanner_t *s) {
   bool eof = *s->current == '\0';
   if (eof) {
-    puts("EOF Found!");
+    // puts("EOF Found!");
   }
   return eof;
 }

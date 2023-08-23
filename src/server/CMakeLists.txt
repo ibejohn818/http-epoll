@@ -7,7 +7,6 @@ set(SOURCES
 )
 
 set(THREAD_POOL 4 CACHE STRING "the amount of threads in the pool")
-set(USE_MEM_POOL 0 CACHE STRING "use memory pool for buffers")
 
 # do some ghetto capability detection
 execute_process(COMMAND which apt
@@ -21,11 +20,6 @@ execute_process(COMMAND which apk
 
 # make thread pool count a configuration option
 add_compile_definitions(THREAD_POOL=${THREAD_POOL})
-
-if(${USE_MEM_POOL} EQUAL 1)
-  add_compile_definitions(USE_MEM_POOL=1)
-  message("-- MEM POOL ON")
-endif()
 
 include_directories(
   "${http-epoll-server_SOURCE_DIR}/src/lib"

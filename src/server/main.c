@@ -6,15 +6,6 @@
 #include <time.h>
 #include <unistd.h>
 
-/*
-void graceful_stop(server_thread_t *threads) {
-  fprintf(stderr, "do a graceful stop \n");
-  for(uint8_t i=0; i < THREAD_POOL; i++) {
-    printf("Thread: %d", threads[(size_t)i].id);
-  }
-}
-*/
-
 /**
  * usage: server [PORT(default:8080)]
  * Start the epoll server 

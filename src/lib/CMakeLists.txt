@@ -19,6 +19,14 @@ execute_process(COMMAND which rpm
 execute_process(COMMAND which apk
                 RESULT_VARIABLE HAS_APK)
 
+set(USE_MEM_POOL 0 CACHE STRING "use memory pool for buffers")
+
+if(${USE_MEM_POOL} EQUAL 1)
+  add_compile_definitions(USE_MEM_POOL)
+  message("-- MEM POOL ON")
+endif()
+
+
 include_directories(
   "${http-epoll-server_SOURCE_DIR}/src/include"
 )
